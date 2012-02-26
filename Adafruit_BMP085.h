@@ -59,7 +59,7 @@ class Adafruit_BMP085 {
   
   // the altitude function uses the math.h library, which uses considerable
   // program memory (by the standards of an ATTiny). If you wish to use it,
-  // then uncomment the line below:
+  // then uncomment the line below as well as the function in main file.
   
   //float readAltitude(float sealevelPressure = 101325); // std atmosphere
   
