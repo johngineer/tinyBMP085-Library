@@ -20,7 +20,7 @@
 
  ****************************************************/
 
-#include "Wire.h"
+#include "TinyWireM.h"
 
 #define BMP085_DEBUG 0
 
