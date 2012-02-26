@@ -20,3 +20,9 @@ BSD license, all text above must be included in any redistribution
 To download. click the DOWNLOADS button in the top right corner, rename the uncompressed folder Adafruit_BMP085. Check that the Adafruit_BMP085 folder contains Adafruit_BMP085.cpp and Adafruit_BMP085.h
 
 Place the Adafruit_BMP085 library folder your <arduinosketchfolder>/libraries/ folder. You may need to create the libraries subfolder if its your first library. Restart the IDE.
+
+-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+Library modified Feb 2012 by John De Cristofaro / johngineer to
+work with the TinyWireM library by BroHogan, which is based on
+Don Blake's usiTWI_Master library for ATTiny's which use a USI
+port for TWI/i2c comm.
