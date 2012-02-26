@@ -12,21 +12,29 @@
 
   Written by Limor Fried/Ladyada for Adafruit Industries.  
   BSD license, all text above must be included in any redistribution
- ****************************************************/
+ 
+  -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~
+  modified to work with the TinyWire Master library (TinyWireM)
+  by johngineer 10-31-2011 -- boo!
 
-#include "Adafruit_BMP085.h"
+  NOTE: to make use of the debug code herein you MUST include the
+  ATTiny serial library in your main program.	
+
+****************************************************/
+
+#include "tinyBMP085.h"
 #include <util/delay.h>
 
-Adafruit_BMP085::Adafruit_BMP085() {
+BMP085::BMP085() {
 }
 
 
-void Adafruit_BMP085::begin(uint8_t mode) {
+void BMP085::begin(uint8_t mode) {
   if (mode > BMP085_ULTRAHIGHRES) 
     mode = BMP085_ULTRAHIGHRES;
   oversampling = mode;
 
-  Wire.begin();
+  TinyWireM.begin();
 
   /* read calibration data */
   ac1 = read16(BMP085_CAL_AC1);
@@ -42,6 +50,7 @@ void Adafruit_BMP085::begin(uint8_t mode) {
   mb = read16(BMP085_CAL_MB);
   mc = read16(BMP085_CAL_MC);
   md = read16(BMP085_CAL_MD);
+
 #if (BMP085_DEBUG == 1)
   Serial.print("ac1 = "); Serial.println(ac1, DEC);
   Serial.print("ac2 = "); Serial.println(ac2, DEC);
@@ -59,7 +68,7 @@ void Adafruit_BMP085::begin(uint8_t mode) {
 #endif
 }
 
-uint16_t Adafruit_BMP085::readRawTemperature(void) {
+uint16_t BMP085::readRawTemperature(void) {
   write8(BMP085_CONTROL, BMP085_READTEMPCMD);
   _delay_ms(5);
 #if BMP085_DEBUG == 1
@@ -68,7 +77,7 @@ uint16_t Adafruit_BMP085::readRawTemperature(void) {
   return read16(BMP085_TEMPDATA);
 }
 
-uint32_t Adafruit_BMP085::readRawPressure(void) {
+uint32_t BMP085::readRawPressure(void) {
   uint32_t raw;
 
   write8(BMP085_CONTROL, BMP085_READPRESSURECMD + (oversampling << 6));
@@ -83,13 +92,9 @@ uint32_t Adafruit_BMP085::readRawPressure(void) {
     _delay_ms(26);
 
   raw = read16(BMP085_PRESSUREDATA);
-
-  if (oversampling==0) {
-    raw <<= 8;
-    raw |= read8(BMP085_PRESSUREDATA+2);
-    raw >>= (8 - oversampling);
-  }
-
+  raw <<= 8;
+  raw |= read8(BMP085_PRESSUREDATA+2);
+  raw >>= (8 - oversampling);
 #if BMP085_DEBUG == 1
   Serial.print("Raw pressure: "); Serial.println(raw);
 #endif
@@ -97,7 +102,7 @@ uint32_t Adafruit_BMP085::readRawPressure(void) {
 }
 
 
-int32_t Adafruit_BMP085::readPressure(void) {
+int32_t BMP085::readPressure(void) {
   int32_t UT, UP, B3, B5, B6, X1, X2, X3, p;
   uint32_t B4, B7;
 
@@ -163,7 +168,7 @@ int32_t Adafruit_BMP085::readPressure(void) {
   if (B7 < 0x80000000) {
     p = (B7 * 2) / B4;
   } else {
-    p = (B7 / B4) * 2;
+    p = (B7 * 2) / B3;
   }
   X1 = (p >> 8) * (p >> 8);
   X1 = (X1 * 3038) >> 16;
@@ -183,9 +188,12 @@ int32_t Adafruit_BMP085::readPressure(void) {
 }
 
 
-float Adafruit_BMP085::readTemperature(void) {
+//float BMP085::readTemperature(void) {
+int32_t BMP085::readTemperature(void) {
+
   int32_t UT, X1, X2, B5;     // following ds convention
-  float temp;
+  //float temp;
+  int32_t temp;
 
   UT = readRawTemperature();
 
@@ -203,12 +211,22 @@ float Adafruit_BMP085::readTemperature(void) {
   X2 = ((int32_t)mc << 11) / (X1 + (int32_t)md);
   B5 = X1 + X2;
   temp = (B5 + 8) >> 4;
-  temp /= 10;
+  //temp /= 10;
 
+  //return (int32_t)temp;
   return temp;
 }
 
-float Adafruit_BMP085::readAltitude(float sealevelPressure) {
+
+/************************************************************************
+   Uncomment the function below to make use of the readAltitude function.
+   This function invokes the math.h library for the "pow()" function, and
+   as such takes up considerable program space. If you don't need to
+   calculate altitude, leave it out!
+*************************************************************************/
+
+/*
+float BMP085::readAltitude(float sealevelPressure) {
   float altitude;
 
   float pressure = readPressure();
@@ -217,68 +235,47 @@ float Adafruit_BMP085::readAltitude(float sealevelPressure) {
 
   return altitude;
 }
+*/
 
 
-/*********************************************************************/
-
-uint8_t Adafruit_BMP085::read8(uint8_t a) {
+uint8_t BMP085::read8(uint8_t a) {
   uint8_t ret;
 
-  Wire.beginTransmission(BMP085_I2CADDR); // start transmission to device 
-#if (ARDUINO >= 100)
-  Wire.write(a); // sends register address to read from
-#else
-  Wire.send(a); // sends register address to read from
-#endif
-  Wire.endTransmission(); // end transmission
+  TinyWireM.beginTransmission(BMP085_I2CADDR); // start transmission to device 
+  TinyWireM.send(a); // sends register address to read from
+  TinyWireM.endTransmission(); // end transmission
   
-  Wire.beginTransmission(BMP085_I2CADDR); // start transmission to device 
-  Wire.requestFrom(BMP085_I2CADDR, 1);// send data n-bytes read
-#if (ARDUINO >= 100)
-  ret = Wire.read(); // receive DATA
-#else
-  ret = Wire.receive(); // receive DATA
-#endif
-  Wire.endTransmission(); // end transmission
+  TinyWireM.beginTransmission(BMP085_I2CADDR); // start transmission to device 
+  TinyWireM.requestFrom(BMP085_I2CADDR, 1);// send data n-bytes read
+  ret = TinyWireM.receive(); // receive DATA
+  //TinyWireM.endTransmission(); // end transmission 
 
   return ret;
 }
 
-uint16_t Adafruit_BMP085::read16(uint8_t a) {
+uint16_t BMP085::read16(uint8_t a) {
   uint16_t ret;
 
-  Wire.beginTransmission(BMP085_I2CADDR); // start transmission to device 
-#if (ARDUINO >= 100)
-  Wire.write(a); // sends register address to read from
-#else
-  Wire.send(a); // sends register address to read from
-#endif
-  Wire.endTransmission(); // end transmission
+  TinyWireM.beginTransmission(BMP085_I2CADDR); // start transmission to device 
+  TinyWireM.send(a); // sends register address to read from
+  TinyWireM.endTransmission(); // end transmission
   
-  Wire.beginTransmission(BMP085_I2CADDR); // start transmission to device 
-  Wire.requestFrom(BMP085_I2CADDR, 2);// send data n-bytes read
-#if (ARDUINO >= 100)
-  ret = Wire.read(); // receive DATA
+  TinyWireM.beginTransmission(BMP085_I2CADDR); // start transmission to device 
+  TinyWireM.requestFrom(BMP085_I2CADDR, 2);// send data n-bytes read
+  ret = TinyWireM.receive(); // receive DATA
   ret <<= 8;
-  ret |= Wire.read(); // receive DATA
-#else
-  ret = Wire.receive(); // receive DATA
-  ret <<= 8;
-  ret |= Wire.receive(); // receive DATA
-#endif
-  Wire.endTransmission(); // end transmission
+  ret |= TinyWireM.receive(); // receive DATA
+  //TinyWireM.endTransmission(); // end transmission
+
 
   return ret;
 }
 
-void Adafruit_BMP085::write8(uint8_t a, uint8_t d) {
-  Wire.beginTransmission(BMP085_I2CADDR); // start transmission to device 
-#if (ARDUINO >= 100)
-  Wire.write(a); // sends register address to read from
-  Wire.write(d);  // write data
-#else
-  Wire.send(a); // sends register address to read from
-  Wire.send(d);  // write data
-#endif
-  Wire.endTransmission(); // end transmission
+void BMP085::write8(uint8_t a, uint8_t d) {
+  TinyWireM.beginTransmission(BMP085_I2CADDR); // start transmission to device 
+  TinyWireM.send(a); // sends register address to read from
+  TinyWireM.send(d);  // write data
+  TinyWireM.endTransmission(); // end transmission
+
+
 }
