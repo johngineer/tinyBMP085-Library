@@ -53,7 +53,8 @@ class Adafruit_BMP085 {
  public:
   Adafruit_BMP085();
   void begin(uint8_t mode = BMP085_ULTRAHIGHRES);  // by default go highres
-  int32_t readTemperature(void);
+  
+  int32_t readTemperature(void); // changed from float to int32_t to avoid FP ops.
   int32_t readPressure(void);
   
   // the altitude function uses the math.h library, which uses considerable
