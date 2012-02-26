@@ -12,13 +12,14 @@
 
   Written by Limor Fried/Ladyada for Adafruit Industries.  
   BSD license, all text above must be included in any redistribution
+
+  -~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+  
+  Modified Feb 2012 by John De Cristofaro / johngineer for use on
+  ATTiny micros running the TinyWire library (TinyWireM).
+
  ****************************************************/
 
-#if (ARDUINO >= 100)
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
 #include "Wire.h"
 
 #define BMP085_DEBUG 0
@@ -52,9 +53,15 @@ class Adafruit_BMP085 {
  public:
   Adafruit_BMP085();
   void begin(uint8_t mode = BMP085_ULTRAHIGHRES);  // by default go highres
-  float readTemperature(void);
+  int32_t readTemperature(void);
   int32_t readPressure(void);
-  float readAltitude(float sealevelPressure = 101325); // std atmosphere
+  
+  // the altitude function uses the math.h library, which uses considerable
+  // program memory (by the standards of an ATTiny). If you wish to use it,
+  // then uncomment the line below:
+  
+  //float readAltitude(float sealevelPressure = 101325); // std atmosphere
+  
   uint16_t readRawTemperature(void);
   uint32_t readRawPressure(void);
   
